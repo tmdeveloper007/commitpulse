@@ -1,8 +1,17 @@
 import { renderHook, act } from '@testing-library/react';
 import '@testing-library/jest-dom/vitest';
 import { describe, expect, it, vi, beforeEach } from 'vitest';
-import { useSiteSearch } from './useSiteSearch';
 import type { SearchableDomain } from '@/lib/search/domains';
+
+const mockSearchDomains = vi.fn();
+
+vi.mock('@/lib/search/fuzzySearch', () => ({
+  searchDomains: (...args: unknown[]) => mockSearchDomains(...args),
+}));
+
+vi.mock('@/lib/search/domains', () => ({
+  SEARCH_DOMAINS: [],
+}));
 
 vi.mock('@/hooks/useDebounce', () => ({
   useDebounce: vi.fn((value: string, _delay: number) => value),
@@ -35,24 +44,22 @@ const mockDomains: SearchableDomain[] = [
   },
 ];
 
-vi.mock('@/lib/search/domains', () => ({
-  SEARCH_DOMAINS: [],
-}));
+// Dynamically import useSiteSearch after mocks are set up
+let useSiteSearch: typeof import('./useSiteSearch').useSiteSearch;
 
-vi.mock('@/lib/search/fuzzySearch', () => ({
-  searchDomains: vi.fn((domains: SearchableDomain[], query: string) => {
+beforeEach(async () => {
+  vi.clearAllMocks();
+  mockSearchDomains.mockImplementation((domains: SearchableDomain[], query: string) => {
     if (!query.trim()) return [];
     return domains
       .filter((d) => d.title.toLowerCase().includes(query.toLowerCase()))
       .map((d) => ({ domain: d, score: 1, matches: [] }));
-  }),
-}));
+  });
+  const mod = await import('./useSiteSearch');
+  useSiteSearch = mod.useSiteSearch;
+});
 
 describe('useSiteSearch', () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-  });
-
   it('returns empty initial state', () => {
     const { result } = renderHook(() => useSiteSearch(mockDomains));
 
@@ -110,17 +117,14 @@ describe('useSiteSearch', () => {
   });
 
   it('results reflect the debounced query via searchDomains', () => {
-    const { searchDomains } = require('@/lib/search/fuzzySearch');
-
     const { result } = renderHook(() => useSiteSearch(mockDomains));
 
     act(() => {
       result.current.setQuery('dashboard');
     });
 
-    // With mocked useDebounce, results update immediately
+    expect(mockSearchDomains).toHaveBeenCalled();
     expect(result.current.results.length).toBeGreaterThan(0);
-    expect(searchDomains).toHaveBeenCalled();
   });
 
   it('returns empty results for non-matching query', () => {
@@ -139,22 +143,32 @@ describe('useSiteSearch', () => {
     expect(result.current.isSearching).toBe(false);
   });
 
-  it('isSearching is true when live query differs from debounced', () => {
-    // With mocked useDebounce, isSearching logic:
-    // isSearching = query !== debouncedQuery && query.trim().length > 0
-    // Since useDebounce is mocked to return the value immediately,
-    // isSearching should be false
+  it('isSearching is false when query matches debounced value', () => {
     const { result } = renderHook(() => useSiteSearch(mockDomains));
 
     act(() => {
       result.current.setQuery('test');
     });
 
+    // With mocked useDebounce returning value immediately, isSearching = false
     expect(result.current.isSearching).toBe(false);
   });
 
+  it('multiple setQuery calls update state each time', () => {
+    const { result } = renderHook(() => useSiteSearch(mockDomains));
+
+    act(() => {
+      result.current.setQuery('first');
+    });
+    expect(result.current.query).toBe('first');
+
+    act(() => {
+      result.current.setQuery('second');
+    });
+    expect(result.current.query).toBe('second');
+  });
+
   it('uses custom domains when provided via the domains parameter', () => {
-    const { searchDomains } = require('@/lib/search/fuzzySearch');
     const customDomains: SearchableDomain[] = [
       {
         id: 'custom',
@@ -172,20 +186,6 @@ describe('useSiteSearch', () => {
       result.current.setQuery('custom');
     });
 
-    expect(searchDomains).toHaveBeenCalledWith(customDomains, 'custom');
-  });
-
-  it('multiple setQuery calls update state each time', () => {
-    const { result } = renderHook(() => useSiteSearch(mockDomains));
-
-    act(() => {
-      result.current.setQuery('first');
-    });
-    expect(result.current.query).toBe('first');
-
-    act(() => {
-      result.current.setQuery('second');
-    });
-    expect(result.current.query).toBe('second');
+    expect(mockSearchDomains).toHaveBeenCalledWith(customDomains, 'custom');
   });
 });
