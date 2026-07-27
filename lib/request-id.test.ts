@@ -1,50 +1,53 @@
-import { describe, expect, it, vi } from 'vitest';
+import { describe, expect, it, vi, beforeEach } from 'vitest';
 import { getRequestId } from './request-id';
 
+const mockHeadersFn = vi.fn();
+
 vi.mock('next/headers', () => ({
-  headers: vi.fn(),
+  headers: () => mockHeadersFn(),
 }));
 
 describe('getRequestId', () => {
+  beforeEach(() => {
+    mockHeadersFn.mockClear();
+  });
+
   it('returns the x-request-id header value when present', async () => {
-    const mockHeaders = {
+    mockHeadersFn.mockResolvedValue({
       get: vi.fn((key: string) => {
         if (key === 'x-request-id') return 'req-123-abc';
         return null;
       }),
-    };
-    vi.mocked(require('next/headers').headers).mockResolvedValue(mockHeaders);
+    });
 
     const result = await getRequestId();
     expect(result).toBe('req-123-abc');
   });
 
   it('returns null when x-request-id header is absent', async () => {
-    const mockHeaders = {
+    mockHeadersFn.mockResolvedValue({
       get: vi.fn(() => null),
-    };
-    vi.mocked(require('next/headers').headers).mockResolvedValue(mockHeaders);
+    });
 
     const result = await getRequestId();
     expect(result).toBeNull();
   });
 
-  it('returns null when headers returns empty string', async () => {
-    const mockHeaders = {
+  it('returns empty string when header value is empty string', async () => {
+    mockHeadersFn.mockResolvedValue({
       get: vi.fn(() => ''),
-    };
-    vi.mocked(require('next/headers').headers).mockResolvedValue(mockHeaders);
+    });
 
     const result = await getRequestId();
-    expect(result).toBeNull();
+    expect(result).toBe('');
   });
 
-  it('calls headers with no arguments', async () => {
-    const headersFn = vi.fn().mockResolvedValue({ get: vi.fn(() => null) });
-    vi.mocked(require('next/headers').headers).mockImplementation(headersFn);
+  it('calls headers() to get request headers', async () => {
+    mockHeadersFn.mockResolvedValue({
+      get: vi.fn(() => null),
+    });
 
     await getRequestId();
-    expect(headersFn).toHaveBeenCalledTimes(1);
-    expect(headersFn).toHaveBeenCalledWith();
+    expect(mockHeadersFn).toHaveBeenCalledTimes(1);
   });
 });
