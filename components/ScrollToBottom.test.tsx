@@ -3,32 +3,31 @@ import '@testing-library/jest-dom/vitest';
 import { describe, expect, it, vi, beforeEach } from 'vitest';
 import ScrollToBottom from './ScrollToBottom';
 
+// Mock lucide-react
+vi.mock('lucide-react', () => ({
+  ChevronDown: (props: { size?: number; [key: string]: unknown }) => (
+    <svg {...props}>
+      <path d="M0 0" />
+    </svg>
+  ),
+}));
+
 // Mock framer-motion hooks used by ScrollToBottom
 vi.mock('framer-motion', () => ({
   AnimatePresence: ({ children }: { children: React.ReactNode }) => children,
   motion: {
-    div: ({
-      children,
-      initial,
-      animate,
-      exit,
-      transition,
-      ...props
-    }: {
-      children?: React.ReactNode;
-      initial?: unknown;
-      animate?: unknown;
-      exit?: unknown;
-      transition?: unknown;
-      [key: string]: unknown;
-    }) => <div {...props}>{children}</div>,
-    circle: ({
-      children,
-      ...props
-    }: {
-      children?: React.ReactNode;
-      [key: string]: unknown;
-    }) => <circle {...props} />,
+    div: ({ children, ...props }: { children?: React.ReactNode; [key: string]: unknown }) => (
+      <div {...props}>{children}</div>
+    ),
+    button: ({ children, ...props }: { children?: React.ReactNode; [key: string]: unknown }) => (
+      <button {...props}>{children}</button>
+    ),
+    circle: ({ children, ...props }: { children?: React.ReactNode; [key: string]: unknown }) => (
+      <circle {...props} />
+    ),
+    span: ({ children, ...props }: { children?: React.ReactNode; [key: string]: unknown }) => (
+      <span {...props}>{children}</span>
+    ),
   },
   useScroll: vi.fn(() => ({
     scrollYProgress: { get: vi.fn(() => 0), on: vi.fn(), set: vi.fn() },
@@ -46,8 +45,16 @@ describe('ScrollToBottom', () => {
     vi.clearAllMocks();
     // Default scroll position: near top of page
     Object.defineProperty(window, 'scrollY', { value: 0, writable: true, configurable: true });
-    Object.defineProperty(window, 'innerHeight', { value: 800, writable: true, configurable: true });
-    Object.defineProperty(document.documentElement, 'scrollHeight', { value: 3000, writable: true, configurable: true });
+    Object.defineProperty(window, 'innerHeight', {
+      value: 800,
+      writable: true,
+      configurable: true,
+    });
+    Object.defineProperty(document.documentElement, 'scrollHeight', {
+      value: 3000,
+      writable: true,
+      configurable: true,
+    });
   });
 
   it('renders the button with correct aria-label', () => {
@@ -86,7 +93,10 @@ describe('ScrollToBottom', () => {
   it('calls scrollTo with scrollHeight as target top', () => {
     const scrollToMock = vi.fn();
     window.scrollTo = scrollToMock;
-    Object.defineProperty(document.documentElement, 'scrollHeight', { value: 3000, writable: true });
+    Object.defineProperty(document.documentElement, 'scrollHeight', {
+      value: 3000,
+      writable: true,
+    });
 
     render(<ScrollToBottom />);
 
@@ -94,9 +104,7 @@ describe('ScrollToBottom', () => {
     fireEvent.click(button);
 
     // scrollTo is called with an object containing top = scrollHeight
-    expect(scrollToMock).toHaveBeenCalledWith(
-      expect.objectContaining({ top: 3000 })
-    );
+    expect(scrollToMock).toHaveBeenCalledWith(expect.objectContaining({ top: 3000 }));
   });
 
   it('renders with fixed positioning styles', () => {
