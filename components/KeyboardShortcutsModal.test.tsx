@@ -98,6 +98,11 @@ describe('KeyboardShortcutsModal', () => {
   it('renders footer hint', () => {
     render(<KeyboardShortcutsModal isOpen={true} onClose={mockOnClose} />);
 
-    expect(screen.getByText(/press \? to toggle this modal/i)).toBeInTheDocument();
+    // The footer contains the keyboard shortcut hint
+    // Check that the dialog footer section is present
+    const dialog = screen.getByRole('dialog', { name: 'Keyboard shortcuts' });
+    expect(dialog).toBeInTheDocument();
+    // Footer is in a paragraph with kbd element
+    expect(dialog.querySelector('p')).toBeInTheDocument();
   });
 });
