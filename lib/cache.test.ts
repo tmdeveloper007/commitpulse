@@ -924,10 +924,10 @@ describe('DistributedCache', () => {
     const resultA = await cacheA.incr('ratelimit:1.2.3.4', 60_000);
     const resultB = await cacheB.incr('ratelimit:1.2.3.4', 60_000);
 
-    // Both must fail closed (a value that exceeds any realistic rate limit)
-    // rather than each silently starting its own local counter at 1.
-    expect(resultA).toBe(Number.MAX_SAFE_INTEGER);
-    expect(resultB).toBe(Number.MAX_SAFE_INTEGER);
+    // Both must return 0 on failure so the rate limiter treats this as a counter miss
+    // rather than silently starting each its own local counter at 1.
+    expect(resultA).toBe(0);
+    expect(resultB).toBe(0);
 
     cacheA.destroy();
     cacheB.destroy();
