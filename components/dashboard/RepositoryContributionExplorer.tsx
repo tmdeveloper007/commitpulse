@@ -81,7 +81,7 @@ export default function RepositoryContributionExplorer({ repos = [], username }:
         className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-800 dark:bg-gray-900"
         data-testid="repo-explorer"
       >
-        <h2 className="text-xl font-bold mb-4 bg-linear-to-r from-blue-500 to-indigo-500 bg-clip-text text-transparent">
+        <h2 className="text-xl font-bold mb-4 bg-gradient-to-r from-blue-500 to-indigo-500 bg-clip-text text-transparent">
           Repository Contribution Explorer
         </h2>
         <div className="flex h-32 flex-col items-center justify-center rounded-lg border border-dashed border-gray-300 dark:border-gray-700">
@@ -202,7 +202,7 @@ export default function RepositoryContributionExplorer({ repos = [], username }:
                       initial={{ width: 0 }}
                       animate={{ width: `${contributionPercentage}%` }}
                       transition={{ duration: 1, ease: 'easeOut' }}
-                      className="h-full bg-linear-to-r from-emerald-400 to-cyan-400 rounded-full"
+                      className="h-full bg-gradient-to-r from-emerald-400 to-cyan-400 rounded-full"
                     />
                   </div>
                 </div>
