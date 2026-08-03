@@ -204,5 +204,7 @@ export const config = {
     '/api/user-repos/:path*',
     '/api/webhook/:path*',
     '/api/webhooks/:path*',
+    '/api/languages/:path*',
+    '/api/tech-stack/:path*',
   ],
 };
